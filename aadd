@@ -24,6 +24,9 @@ command -v sudo >/dev/null || die "sudo is missing: install it and add yourself 
 : "${USER:=$(id -un)}"   # unset in some containers and cron
 detect_distro
 ui_bootstrap
+# dialog draws on /dev/tty; without one (su -c, ssh without -t, cron) every menu
+# fails instantly and would look like Cancel
+( : </dev/tty ) 2>/dev/null || die "aadd needs an interactive terminal: run it directly in a terminal (or ssh -t), not via su -c"
 quit() { clear; echo "aadd: cancelled, nothing more was changed."; exit 1; }
 
 # Defaults; a previous run's aadd.conf overrides them, so reruns remember choices

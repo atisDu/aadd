@@ -5,7 +5,7 @@ detect_distro() {
 	[ -r /etc/os-release ] || die "no /etc/os-release: can't tell which distro this is"
 	. /etc/os-release
 	DISTRO_NAME=${PRETTY_NAME:-$ID}
-	case " $ID $ID_LIKE " in
+	case " $ID ${ID_LIKE:-} " in
 		*" arch "*)                DISTRO=arch ;;
 		*" debian "*|*" ubuntu "*) DISTRO=debian ;;
 		*" fedora "*|*" rhel "*)   DISTRO=fedora ;;

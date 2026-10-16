@@ -21,6 +21,7 @@ mkdir -p "$(dirname "$LOG")"
 [ "$(id -u)" = 0 ] && die "run aadd as your normal user, not root (it uses sudo itself)"
 command -v sudo >/dev/null || die "sudo is missing: install it and add yourself to the sudo/wheel group first"
 
+: "${USER:=$(id -un)}"   # unset in some containers and cron
 detect_distro
 ui_bootstrap
 quit() { clear; echo "aadd: cancelled, nothing more was changed."; exit 1; }

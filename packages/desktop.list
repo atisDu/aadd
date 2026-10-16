@@ -1,0 +1,41 @@
+## dwm desktop (needed for the custom config)
+base-devel | build-essential | @development-tools | compiler, make
+git | git | git | git
+libx11 | libx11-dev | libX11-devel | X11 headers (dwm/dmenu/slstatus)
+libxft | libxft-dev | libXft-devel | Xft headers
+libxinerama | libxinerama-dev | libXinerama-devel | Xinerama headers
+freetype2 | libfreetype-dev | freetype-devel | freetype headers
+fontconfig | libfontconfig-dev | fontconfig-devel | fontconfig headers
+xorg-server | xserver-xorg | xorg-x11-server-Xorg | X server
+xorg-xinit | xinit | xorg-x11-xinit | startx
+xorg-xrandr | x11-xserver-utils | xrandr | xrandr
+xorg-xinput | xinput | xinput | xinput
+xorg-xrdb | x11-xserver-utils | xrdb | xrdb
+xorg-setxkbmap | x11-xkb-utils | setxkbmap | setxkbmap
+xorg-xkbcomp | x11-xkb-utils | xkbcomp | xkbcomp (custom layouts)
+xorg-xprop | x11-utils | xprop | xprop
+xorg-xsetroot | x11-xserver-utils | xsetroot | xsetroot
+kitty | kitty | kitty | terminal
+dunst | dunst | dunst | notifications
+libnotify | libnotify-bin | libnotify | notify-send
+feh | feh | feh | wallpaper
+xss-lock | xss-lock | xss-lock | lock on suspend/idle
+i3lock-color | i3lock | i3lock | screen locker (i3lock-color on Arch)
+xdotool | xdotool | xdotool | typing/automation
+snixembed | - | - | tray icon bridge
+polkit-gnome | policykit-1-gnome | mate-polkit | polkit password prompts
+alsa-utils | alsa-utils | alsa-utils | amixer (status bar volume)
+pipewire | pipewire | pipewire | audio
+pipewire-pulse | pipewire-pulse | pipewire-pulseaudio | pulse compatibility
+wireplumber | wireplumber | wireplumber | session manager
+pavucontrol | pavucontrol | pavucontrol | volume mixer
+spectacle | kde-spectacle | spectacle | screenshots (dwm Print keys)
+breeze | breeze-cursor-theme | breeze-cursor-theme | Breeze cursors/theme
+breeze-gtk | breeze-gtk-theme | breeze-gtk | Breeze GTK theme
+papirus-icon-theme | papirus-icon-theme | papirus-icon-theme | icons
+plasma-integration | plasma-integration | plasma-integration | KDE Qt platform theme
+ttf-fantasque-nerd | fonts-fantasque-sans | - | Fantasque Sans Mono
+noto-fonts | fonts-noto | google-noto-sans-fonts | Noto
+noto-fonts-emoji | fonts-noto-color-emoji | google-noto-emoji-fonts | emoji
+xdg-user-dirs | xdg-user-dirs | xdg-user-dirs | Pictures/Documents dirs
+xsettingsd | xsettingsd | xsettingsd | GTK settings daemon

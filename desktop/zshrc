@@ -1,0 +1,10 @@
+# Rendered by aadd. Personal additions go in ~/.config/aadd/zshrc.local
+export ZSH="$HOME/.local/share/oh-my-zsh"
+ZSH_THEME="strug"
+plugins=(git)
+[ -f "$ZSH/oh-my-zsh.sh" ] && . "$ZSH/oh-my-zsh.sh"
+
+export PATH="$HOME/.local/bin:$PATH"
+alias x="startx"
+
+[ -f "$HOME/.config/aadd/zshrc.local" ] && . "$HOME/.config/aadd/zshrc.local"

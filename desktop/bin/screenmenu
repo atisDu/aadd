@@ -1,0 +1,46 @@
+#!/bin/sh
+# dmenu display switcher: layout, plus a per-screen scale that sticks.
+# X11 has a single global DPI, so the scale actually applied is the primary
+# screen's; the others are remembered for when they become primary.
+# Bound to XF86Display in dwm.
+HOTPLUG=monitor-hotplug
+CONF=${XDG_CONFIG_HOME:-$HOME/.config}/screen-scale
+# internal panel: first eDP/LVDS/DSI output, whatever the driver calls it
+INTERNAL=$(xrandr --query | awk '/^(eDP|LVDS|DSI)/{print $1; exit}')
+INTERNAL=${INTERNAL:-eDP-1}
+INTMODE="@AADD_INTERNAL_MODE@"   # --auto picks the preferred mode, often 60Hz on high-refresh panels
+EXTMODE="@AADD_EXTERNAL_MODE@"
+EXTERNAL=$(xrandr --query | awk -v i="$INTERNAL" '/ connected/ && $1 != i {print $1; exit}')
+EXTERNAL=${EXTERNAL:-HDMI-1}
+
+mydmenu() {
+  dmenu -i -l 12 -fn 'Fantasque Sans Mono:pixelsize=@AADD_FONT_PX@' -nb '#1d1f21' -nf '#eeeeee' -sb '#040707' -sf '#eeeeee' "$@"
+}
+primary() { xrandr --query | awk '/ connected primary/{print $1}'; }
+
+case $(printf 'tikai iebūvētais\npagarināt\ntikai ārējais\nmērogs…\n' | mydmenu -p 'ekrāns:') in
+'tikai iebūvētais')
+  xrandr --output $EXTERNAL --off --output $INTERNAL $INTMODE --primary && "$HOTPLUG" dpi $INTERNAL
+  ;;
+pagarināt)
+  xrandr --output $INTERNAL $INTMODE --primary --output $EXTERNAL $EXTMODE --above $INTERNAL &&
+    "$HOTPLUG" dpi $INTERNAL
+  ;;
+'tikai ārējais')
+  xrandr --output $EXTERNAL $EXTMODE --primary --output $INTERNAL --off && "$HOTPLUG" dpi $EXTERNAL
+  ;;
+'mērogs…')
+  out=$(xrandr --query | awk '/ connected/{print $1}' | mydmenu -p 'mērogs kuram ekrānam:')
+  [ -n "$out" ] || exit
+  pct=$(printf '100\n125\n150\n160\n175\n200\n' | mydmenu -p "$out mērogs %:")
+  [ -n "$pct" ] || exit
+  { [ -f "$CONF" ] && grep -v "^$out " "$CONF"; printf '%s %s\n' "$out" "$pct"; } > "$CONF.tmp" &&
+    mv "$CONF.tmp" "$CONF"
+  if [ "$out" = "$(primary)" ]; then
+    "$HOTPLUG" dpi "$out"
+    notify-send -t 3000 ekrāns "$out: $pct%"
+  else
+    notify-send -t 3000 ekrāns "$out: $pct% (stāsies spēkā, kad būs galvenais ekrāns)"
+  fi
+  ;;
+esac

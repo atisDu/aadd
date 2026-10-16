@@ -1,0 +1,6 @@
+Machine profiles: hardware-only tweaks for one model. aadd offers a profile
+when P_MATCH is found in the DMI product name/version
+(/sys/class/dmi/id/product_{name,version}).
+  profile.conf    P_MATCH plus AADD_* overrides (written into aadd.conf)
+  xinitrc.local   optional, copied to ~/.config/aadd/xinitrc.local
+No usernames, network names or keys here: this repo is public.

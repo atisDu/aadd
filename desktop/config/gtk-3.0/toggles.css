@@ -1,0 +1,49 @@
+/* dwm-coloured toggles: flat pill switches, flat check/radio, muted toggle buttons.
+   Imported from gtk-3.0/gtk.css and gtk-4.0/gtk.css; user CSS outranks the Breeze theme. */
+
+/* switches: thin pill, round knob; off = dark, on = light (inverted like dwm's bar) */
+switch {
+  min-width: 40px; min-height: 22px;
+  padding: 2px; margin: 0;
+  border-radius: 999px;
+  border: 1px solid #444444;
+  background: #282a2e;
+  box-shadow: none; outline: none;
+  color: transparent; font-size: 0;
+}
+switch:checked { background: #eeeeee; border-color: #eeeeee; }
+switch slider {
+  min-width: 18px; min-height: 18px;
+  margin: 0; border: none; border-radius: 999px;
+  background: #888888;
+  box-shadow: none;
+}
+switch:hover slider { background: #aaaaaa; }
+switch:checked slider { background: #1d1f21; }
+switch image { opacity: 0; }
+switch:disabled { opacity: 0.4; }
+
+/* checkboxes and radios */
+check, radio {
+  min-width: 16px; min-height: 16px;
+  margin: 0 6px 0 0; padding: 0;
+  border: 1px solid #444444;
+  background: #282a2e;
+  box-shadow: none;
+  -gtk-icon-source: none;
+  -gtk-icon-shadow: none;
+}
+check { border-radius: 4px; }
+radio { border-radius: 999px; }
+check:hover, radio:hover { border-color: #888888; }
+check:checked, check:indeterminate { background: #eeeeee; border-color: #eeeeee; color: #1d1f21; }
+check:checked { -gtk-icon-source: -gtk-icontheme("object-select-symbolic"); }
+check:indeterminate { -gtk-icon-source: -gtk-icontheme("list-remove-symbolic"); }
+radio:checked {
+  border-color: #eeeeee;
+  background: radial-gradient(circle, #eeeeee 0px, #eeeeee 4px, #282a2e 5px);
+}
+check:disabled, radio:disabled { opacity: 0.4; }
+
+/* toggle buttons (pressed state) */
+button:checked { background: #444444; border-color: #444444; color: #eeeeee; box-shadow: none; }

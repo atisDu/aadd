@@ -1,0 +1,9 @@
+! Rendered by aadd. DPI follows the display scale picked in aadd;
+! monitor-hotplug re-merges Xft.dpi/Xcursor.size when outputs change.
+Xft.dpi: @AADD_DPI@
+Xft.antialias: 1
+Xft.hinting: 1
+Xft.hintstyle: hintslight
+Xft.rgba: rgb
+Xcursor.theme: breeze_cursors
+Xcursor.size: @AADD_CURSOR_SIZE@

@@ -1,0 +1,13 @@
+## Gaming
+## off
+steam | steam-installer | - | Steam (needs multilib on Arch, contrib+i386 on Debian)
+lutris | - | lutris | Lutris
+heroic-games-launcher | - | - | Heroic (Epic/GOG)
+gamemode | gamemode | gamemode | Feral gamemode
+lib32-gamemode | - | - | gamemode 32-bit
+mangohud | mangohud | mangohud | MangoHud
+lib32-mangohud | - | - | MangoHud 32-bit
+gamescope | gamescope | gamescope | gamescope
+protontricks | - | protontricks | protontricks
+wine | wine | wine | wine
+xpadneo-dkms | - | - | Xbox controller driver

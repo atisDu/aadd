@@ -1,0 +1,18 @@
+## Coding
+vscodium | - | - | VSCodium
+github-cli | gh | gh | GitHub CLI
+glab | glab | glab | GitLab CLI
+nodejs | nodejs | nodejs24 | Node.js
+npm | npm | nodejs24-npm | npm
+python | python3 | python3 | Python
+python-pip | python3-pip | python3-pip | pip
+uv | - | uv | uv
+meson | meson | meson | meson
+ninja | ninja-build | ninja-build | ninja
+docker | docker.io | moby-engine | Docker
+docker-compose | docker-compose | docker-compose | Compose
+meld | meld | meld | diff tool
+radare2 | radare2 | radare2 | reverse engineering
+nmap | nmap | nmap | nmap
+wireshark-qt | wireshark | wireshark | Wireshark
+termshark | termshark | - | Wireshark TUI

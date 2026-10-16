@@ -1,0 +1,84 @@
+diff --git a/dmenu.c b/dmenu.c
+index 27b7a30..c0040c2 100644
+--- a/dmenu.c
++++ b/dmenu.c
+@@ -26,7 +26,7 @@
+ #define TEXTW(X)              (drw_fontset_getwidth(drw, (X)) + lrpad)
+ 
+ /* enums */
+-enum { SchemeNorm, SchemeSel, SchemeOut, SchemeLast }; /* color schemes */
++enum { SchemeNorm, SchemeSel, SchemeOut, SchemeNormHighlight, SchemeSelHighlight, SchemeLast }; /* color schemes */
+ 
+ struct item {
+ 	char *text;
+@@ -130,9 +130,59 @@ cistrstr(const char *h, const char *n)
+ 	return NULL;
+ }
+ 
++/* colors in the visible letters of `item->text` that match the typed
++ * query (`text`), one highlighted run per whitespace-separated token,
++ * on top of an already-drawn item */
++static void
++drawhighlights(struct item *item, int x, int y, int maxw)
++{
++	char buf[sizeof text];
++	char pre[1024], seg[1024];
++	char *tok, *match;
++	size_t n;
++	int pw, hw;
++
++	if (!text[0] || !item->text[0])
++		return;
++
++	strcpy(buf, text);
++	for (tok = strtok(buf, " "); tok; tok = strtok(NULL, " ")) {
++		if (!tok[0] || !(match = fstrstr(item->text, tok)))
++			continue;
++
++		/* pixel width of item->text before the match */
++		n = (size_t)(match - item->text);
++		if (n > sizeof pre - 1)
++			n = sizeof pre - 1;
++		memcpy(pre, item->text, n);
++		pre[n] = '\0';
++		pw = drw_fontset_getwidth(drw, pre);
++		if (lrpad / 2 + pw >= maxw)
++			continue; /* scrolled/clipped past the visible part of the item */
++
++		/* pixel width of the matched run itself, taken from item->text
++		 * so we preserve its original casing */
++		n = strlen(tok);
++		if (n > sizeof seg - 1)
++			n = sizeof seg - 1;
++		memcpy(seg, match, n);
++		seg[n] = '\0';
++		hw = drw_fontset_getwidth(drw, seg);
++		if (lrpad / 2 + pw + hw > maxw)
++			hw = maxw - (lrpad / 2 + pw);
++		if (hw <= 0)
++			continue;
++
++		drw_setscheme(drw, scheme[item == sel ? SchemeSelHighlight : SchemeNormHighlight]);
++		drw_text(drw, x + lrpad / 2 + pw, y, hw, bh, 0, seg, 0);
++	}
++}
++
+ static int
+ drawitem(struct item *item, int x, int y, int w)
+ {
++	int r;
++
+ 	if (item == sel)
+ 		drw_setscheme(drw, scheme[SchemeSel]);
+ 	else if (item->out)
+@@ -140,7 +190,9 @@ drawitem(struct item *item, int x, int y, int w)
+ 	else
+ 		drw_setscheme(drw, scheme[SchemeNorm]);
+ 
+-	return drw_text(drw, x, y, w, bh, lrpad / 2, item->text, 0);
++	r = drw_text(drw, x, y, w, bh, lrpad / 2, item->text, 0);
++	drawhighlights(item, x, y, w);
++	return r;
+ }
+ 
+ static void

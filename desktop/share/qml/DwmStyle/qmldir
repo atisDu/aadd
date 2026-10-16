@@ -1,0 +1,5 @@
+module DwmStyle
+Switch 2.0 Switch.qml
+CheckBox 2.0 CheckBox.qml
+RadioButton 2.0 RadioButton.qml
+import org.kde.desktop

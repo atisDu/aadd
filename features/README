@@ -1,0 +1,8 @@
+One file per optional feature. aadd sources each and reads:
+  F_VAR    aadd.conf variable it controls (1/0); templates use @F_VAR@
+  F_TITLE  menu text
+  F_PKGS   package lines in packages/*.list format (arch | debian | fedora | desc)
+  f_detect      exit 0 if this machine has the hardware -> preselected in the menu
+  f_apply       optional, runs after packages are installed when the feature is on
+To add a feature: drop a new file here, then use @F_VAR@ in any desktop/ or
+suckless/ file (shell: `[ "@AADD_X@" = 1 ]`, C: `#define AADD_X @AADD_X@`).

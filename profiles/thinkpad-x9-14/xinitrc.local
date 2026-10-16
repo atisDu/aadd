@@ -1,0 +1,7 @@
+# ThinkPad X9-14 Gen 1 input tuning (sourced from ~/.xinitrc)
+# Mouse: acceleration on, neutral speed (KDE's effective default)
+xinput set-prop "SNSL002E:00 2C2F:002E Mouse" "libinput Accel Profile Enabled" 1 0 2>/dev/null
+xinput set-prop "SNSL002E:00 2C2F:002E Mouse" "libinput Accel Speed" 0 2>/dev/null
+# Touchpad: KDE's configured sensitivity, no disable-while-typing
+xinput set-prop "SNSL002E:00 2C2F:002E Touchpad" "libinput Accel Speed" 0.500 2>/dev/null
+xinput set-prop "SNSL002E:00 2C2F:002E Touchpad" "libinput Disable While Typing Enabled" 0 2>/dev/null

@@ -1,0 +1,33 @@
+# Matches dwm (aadd suckless/dwm/config.h): font, colors, 2px border.
+[global]
+    font = Fantasque Sans Mono @AADD_FONT_PX@px
+    width = (280, 440)
+    height = (0, 400)
+    origin = top-center
+    offset = (0, 56)
+    padding = 10
+    horizontal_padding = 12
+    text_icon_padding = 12
+    frame_width = 2
+    gap_size = 6
+    separator_height = 2
+    separator_color = frame
+    corner_radius = 0
+    max_icon_size = 56
+
+[urgency_low]
+    timeout = 4
+    background = "#1d1f21"
+    foreground = "#bbbbbb"
+    frame_color = "#444444"
+
+[urgency_normal]
+    timeout = 6
+    background = "#1d1f21"
+    foreground = "#eeeeee"
+    frame_color = "#000000"
+
+[urgency_critical]
+    background = "#1d1f21"
+    foreground = "#eeeeee"
+    frame_color = "#cc6666"

@@ -1,0 +1,10 @@
+## System & networking
+## off
+networkmanager | network-manager | NetworkManager | NetworkManager
+ufw | ufw | ufw | firewall
+tailscale | - | tailscale | Tailscale
+nfs-utils | nfs-common | nfs-utils | NFS client
+btrfs-progs | btrfs-progs | btrfs-progs | btrfs tools
+snapper | snapper | snapper | btrfs snapshots
+smartmontools | smartmontools | smartmontools | disk health
+fwupd | fwupd | fwupd | firmware updates

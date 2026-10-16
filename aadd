@@ -1,0 +1,209 @@
+#!/usr/bin/env bash
+# aadd - Atis's automated desktop deploy.
+# Installs package sets and the dwm desktop (dwm, dmenu, slstatus, scripts,
+# dotfiles) on Arch, Debian or Fedora based systems. Run as your normal user;
+# it asks for sudo when needed. Creating users and passwords is up to you.
+#
+#   ./aadd            interactive menus
+#   ./aadd --dry-run  same menus, but only print what would be done
+set -uo pipefail
+
+REPO=$(cd "$(dirname "$(readlink -f "$0")")" && pwd)
+CONF_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/aadd"
+CONF="$CONF_DIR/aadd.conf"
+BACKUP_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/aadd/backups/$(date +%Y%m%d-%H%M%S)"
+DRY_RUN=0
+[ "${1:-}" = --dry-run ] && DRY_RUN=1
+
+for f in "$REPO"/lib/*.sh; do . "$f"; done
+mkdir -p "$(dirname "$LOG")"
+
+[ "$(id -u)" = 0 ] && die "run aadd as your normal user, not root (it uses sudo itself)"
+command -v sudo >/dev/null || die "sudo is missing: install it and add yourself to the sudo/wheel group first"
+
+detect_distro
+ui_bootstrap
+quit() { clear; echo "aadd: cancelled, nothing more was changed."; exit 1; }
+
+# Defaults; a previous run's aadd.conf overrides them, so reruns remember choices
+AADD_SCALE=100 AADD_KB_LAYOUT=us AADD_KB_VARIANT=
+AADD_INTERNAL_MODE=--auto AADD_EXTERNAL_MODE=--auto
+AADD_WALLPAPER_DIR="$(xdg-user-dir PICTURES 2>/dev/null || echo "$HOME/Pictures")/wallpapers"
+HAD_CONF=0
+[ -f "$CONF" ] && { . "$CONF"; HAD_CONF=1; }
+X11_LAYOUT=$(localectl status 2>/dev/null | awk '/X11 Layout/{print $3}')
+[ $HAD_CONF = 0 ] && [ -n "$X11_LAYOUT" ] && AADD_KB_LAYOUT=$X11_LAYOUT
+
+# ---------------------------------------------------------------- 1. machine
+MODE=$(ui_radio "Machine" "Detected: $DISTRO_NAME ($DISTRO family)\n\nWhat kind of machine is this?" \
+	new      "Fresh install - set everything up" on \
+	existing "Already set up - back up existing configs, then replace them" off) || quit
+
+# ---------------------------------------------------------------- 2. packages
+cats=()
+for f in "$REPO"/packages/*.list; do
+	c=$(basename "$f" .list); [ "$c" = desktop ] && continue
+	title=$(sed -n '1s/^## //p' "$f")
+	state=on
+	{ [ "$MODE" = existing ] || sed -n 2p "$f" | grep -qx '## off'; } && state=off
+	cats+=("$c" "$title" "$state")
+done
+CATS=$(ui_check "Packages" "Package categories to install (Space toggles):" "${cats[@]}") || quit
+
+PKGS=()
+for c in $CATS; do
+	items=()
+	while IFS= read -r line; do
+		name=$(pkg_column "$line")
+		desc=$(cut -d'|' -f4 <<<"$line" | sed 's/^ *//')
+		[ "$name" = - ] && continue   # not packaged on this distro
+		items+=("$name" "$desc" on)
+	done < <(grep -v '^#' "$REPO/packages/$c.list" | grep '|')
+	[ ${#items[@]} -gt 0 ] || continue
+	sel=$(ui_check "$(sed -n '1s/^## //p' "$REPO/packages/$c.list")" \
+		"Packages to install ($DISTRO names):" "${items[@]}") || quit
+	PKGS+=($sel)
+done
+
+# ---------------------------------------------------------------- 3. desktop
+DESKTOP=0
+ui_yesno "Desktop config" "Set up the custom dwm desktop?\n\nBuilds dwm, dmenu and slstatus, installs the desktop scripts \
+(lock, wifi/bt/display menus...) to ~/.local/bin and the dotfiles to ~/.config.\
+$([ "$MODE" = existing ] && echo "\n\nExisting files that differ are moved to\n${BACKUP_DIR/#$HOME/\~}")" && DESKTOP=1
+
+FEATURES=()
+if [ $DESKTOP = 1 ]; then
+	items=()
+	for f in "$REPO"/features/*.sh; do
+		( . "$f"; f_detect ) && det="detected" || det="not detected"
+		F_VAR=$(. "$f"; echo "$F_VAR"); F_TITLE=$(. "$f"; echo "$F_TITLE")
+		prev=${!F_VAR:-}
+		if [ -n "$prev" ]; then state=$([ "$prev" = 1 ] && echo on || echo off)
+		else state=$([ "$det" = detected ] && echo on || echo off); fi
+		items+=("$F_VAR" "$F_TITLE [$det]" "$state")
+	done
+	FEATURES=($(ui_check "Hardware & features" \
+		"Pick what this computer has and what you want.\nUnpicked features are left out of the scripts and keybinds, so nothing errors on missing hardware." \
+		"${items[@]}")) || quit
+
+	PROFILE=   # before the scale menu: a profile sets the default scale
+	dmi="$(cat /sys/class/dmi/id/product_name /sys/class/dmi/id/product_version 2>/dev/null)"
+	for p in "$REPO"/profiles/*/profile.conf; do
+		[ -f "$p" ] || continue
+		P_MATCH=$(. "$p"; echo "$P_MATCH")
+		[[ $dmi == *"$P_MATCH"* ]] || continue
+		ui_yesno "Machine profile" "This looks like a $P_MATCH.\nApply its profile (panel mode, scale, input tuning)?" &&
+			PROFILE=$(dirname "$p") && . "$p"
+	done
+
+	scales=()
+	for s in 100 125 150 160 175 200; do scales+=("$s" "%" "$([ "$s" = "$AADD_SCALE" ] && echo on || echo off)"); done
+	AADD_SCALE=$(ui_radio "Display scale" "UI scale (fonts, DPI, cursor). 160 suits a 14\" 2.8K panel:" "${scales[@]}") || quit
+
+	kb=$(ui_input "Keyboard" "X keyboard layout and variant (setxkbmap), e.g.  lv apostrophe  or  us" \
+		"$AADD_KB_LAYOUT${AADD_KB_VARIANT:+ $AADD_KB_VARIANT}") || quit
+	read -r AADD_KB_LAYOUT AADD_KB_VARIANT <<<"$kb"
+
+	AADD_WALLPAPER_DIR=$(ui_input "Wallpapers" "Folder with wallpapers (a random one every 15 min; empty or missing = plain color):" \
+		"$AADD_WALLPAPER_DIR") || quit
+
+fi
+
+# ---------------------------------------------------------------- 4. confirm
+summary="Mode: $MODE\nDistro: $DISTRO_NAME\nPackage categories: ${CATS:-none}\nPackages: ${#PKGS[@]}\n"
+[ $DESKTOP = 1 ] && summary+="Desktop: yes, scale $AADD_SCALE%, keyboard $AADD_KB_LAYOUT $AADD_KB_VARIANT\nFeatures: ${FEATURES[*]:-none}\nProfile: ${PROFILE:+$(basename "$PROFILE")}\n" ||
+	summary+="Desktop: no\n"
+[ $DRY_RUN = 1 ] && summary+="\nDRY RUN: nothing will be changed."
+ui_yesno "Ready" "$summary\nGo?" || quit
+clear
+
+# ---------------------------------------------------------------- 5. do it
+[ $DRY_RUN = 1 ] || sudo -v || die "sudo failed"
+log "aadd on $DISTRO_NAME, mode $MODE, log: $LOG"
+
+# Feature vars: 1 if picked, 0 if not; derived values from the scale
+for f in "$REPO"/features/*.sh; do
+	v=$(. "$f"; echo "$F_VAR")
+	printf -v "$v" 0
+	for x in "${FEATURES[@]}"; do [ "$x" = "$v" ] && printf -v "$v" 1; done
+done
+AADD_DPI=$(( (96 * AADD_SCALE + 50) / 100 ))
+AADD_FONT_PX=$(( (19 * AADD_SCALE + 50) / 100 ))
+AADD_CURSOR_SIZE=$(( (24 * AADD_SCALE + 50) / 100 ))
+AADD_GTK_DPI=$(( AADD_DPI * 1024 ))
+dm=0; [ -e /etc/systemd/system/display-manager.service ] && dm=1
+AADD_AUTOSTARTX=$(( dm ? 0 : 1 ))
+
+pkg_refresh
+all=("${PKGS[@]}")
+if [ $DESKTOP = 1 ]; then
+	while IFS= read -r line; do all+=("$(pkg_column "$line")"); done < <(grep -v '^#' "$REPO/packages/desktop.list" | grep '|')
+	for f in "$REPO"/features/*.sh; do
+		v=$(. "$f"; echo "$F_VAR"); [ "${!v}" = 1 ] || continue
+		while IFS= read -r line; do [ -n "$line" ] && all+=("$(pkg_column "$line")"); done <<<"$(. "$f"; echo "$F_PKGS")"
+	done
+fi
+[ ${#all[@]} -gt 0 ] && pkg_install "${all[@]}"
+
+# services for packages that need one
+for p in "${all[@]}"; do
+	case $p in
+		docker|docker.io|moby-engine) enable_service docker.service; add_group docker ;;
+		cups) enable_service cups.service ;;
+		tailscale) enable_service tailscaled.service ;;
+	esac
+done
+
+if [ $DESKTOP = 1 ]; then
+	if [ $DRY_RUN = 0 ]; then
+		mkdir -p "$CONF_DIR"
+		{ echo "# Written by aadd $(date +%F). Edit and rerun ./aadd to apply."
+		  for v in $(compgen -v AADD_); do printf '%s=%q\n' "$v" "${!v}"; done; } >"$CONF"
+	fi
+
+	# Fantasque Sans Mono Nerd Font when the distro doesn't package it
+	if [[ $(fc-list : family 2>/dev/null) != *"FantasqueSansM Nerd"* ]]; then
+		log "fetching Fantasque Sans Mono Nerd Font"
+		fd="$HOME/.local/share/fonts/FantasqueSansMono"
+		run mkdir -p "$fd" &&
+			run sh -c "curl -fsSL https://github.com/ryanoasis/nerd-fonts/releases/latest/download/FantasqueSansMono.tar.xz | tar -xJ -C '$fd'" &&
+			run fc-cache -f "$fd"
+	fi
+
+	log "installing dotfiles and scripts"
+	deploy_tree "$REPO/desktop/config" "${XDG_CONFIG_HOME:-$HOME/.config}"
+	deploy_tree "$REPO/desktop/share" "$HOME/.local/share"
+	for f in "$REPO"/desktop/bin/*; do
+		# stt's shebang points into its venv, which only exists with the feature on
+		[ "${f##*/}" = stt ] && [ "$AADD_STT" != 1 ] && continue
+		deploy "$f" "$HOME/.local/bin/${f##*/}"
+	done
+	deploy "$REPO/desktop/xinitrc" "$HOME/.xinitrc"
+	deploy "$REPO/desktop/Xresources" "$HOME/.Xresources"
+	[ -n "${PROFILE:-}" ] && [ -f "$PROFILE/xinitrc.local" ] && [ ! -e "$CONF_DIR/xinitrc.local" ] &&
+		deploy "$PROFILE/xinitrc.local" "$CONF_DIR/xinitrc.local"
+
+	for s in dwm dmenu slstatus; do build_suckless $s; done
+
+	log "adding the Dwm session for display managers"
+	srun install -Dm755 "$REPO/desktop/xsession/aadd-dwm-session" /usr/local/bin/aadd-dwm-session
+	srun install -Dm644 "$REPO/desktop/xsession/dwm.desktop" /usr/share/xsessions/dwm.desktop
+
+	for f in "$REPO"/features/*.sh; do
+		unset -f f_apply
+		. "$f"
+		[ "${!F_VAR}" = 1 ] && declare -F f_apply >/dev/null && { log "setting up: $F_TITLE"; f_apply; }
+	done
+	[ $dm = 0 ] && [ "$AADD_ZSH" != 1 ] && note "No display manager found: log in on a tty and run  startx"
+fi
+
+# ---------------------------------------------------------------- 6. report
+echo
+log "done$([ $DRY_RUN = 1 ] && echo ' (dry run, nothing changed)')"
+[ -d "$BACKUP_DIR" ] && log "old files were moved to ${BACKUP_DIR/#$HOME/\~}"
+note "Users, passwords, git identity (git config --global user.name/user.email) and SSH keys are not handled by aadd: set them up by hand."
+for n in "${NOTES[@]}"; do printf '\n\033[1m*\033[0m %s\n' "$n"; done
+if [ ${#FAILED[@]} -gt 0 ]; then
+	printf '\n\033[1;33mThese steps had problems (details in %s):\033[0m\n' "$LOG"
+	printf '  - %s\n' "${FAILED[@]}"
+fi

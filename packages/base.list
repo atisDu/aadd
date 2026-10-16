@@ -1,0 +1,20 @@
+## Base command-line tools
+curl | curl | curl | curl
+wget | wget | wget2-wget | wget
+rsync | rsync | rsync | rsync
+htop | htop | htop | htop
+btop | btop | btop | btop
+ripgrep | ripgrep | ripgrep | rg
+micro | micro | micro | micro editor
+neovim | neovim | neovim | neovim
+vim | vim | vim-enhanced | vim
+unzip | unzip | unzip | unzip
+unrar | unrar-free | unrar | unrar
+man-db | man-db | man-db | man pages
+openssh | openssh-client | openssh-clients | ssh
+fastfetch | fastfetch | fastfetch | system info
+plocate | plocate | plocate | locate
+duf | duf | duf | disk usage
+pv | pv | pv | pipe viewer
+bash-completion | bash-completion | bash-completion | completion
+zsh | zsh | zsh | zsh

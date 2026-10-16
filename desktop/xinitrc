@@ -1,0 +1,47 @@
+#!/bin/sh
+# Rendered by aadd from desktop/xinitrc. Rerun aadd to change features;
+# put machine-only tweaks (xinput, xrandr) in ~/.config/aadd/xinitrc.local,
+# which aadd never overwrites.
+export PATH="$HOME/.local/bin:$PATH"
+export XCURSOR_THEME=breeze_cursors
+# XCURSOR_SIZE unset on purpose: it would override Xcursor.size, which
+# monitor-hotplug switches along with the DPI.
+export QT_QPA_PLATFORMTHEME=kde
+# Qt Quick apps: Breeze, but with dwm-coloured switch/check/radio from
+# ~/.local/share/qml/DwmStyle (Breeze's own switches are near-invisible in the dwm scheme)
+export QML_IMPORT_PATH="$HOME/.local/share/qml"
+export QT_QUICK_CONTROLS_STYLE=DwmStyle
+# Firefox needs XInput2 for touchscreen scroll/pinch and smooth trackpad scroll
+export MOZ_USE_XINPUT2=1
+
+[ -f "$HOME/.Xresources" ] && xrdb -merge "$HOME/.Xresources"
+setxkbmap @AADD_KB_LAYOUT@ @AADD_KB_VARIANT@
+[ -f "$HOME/.config/aadd/xinitrc.local" ] && . "$HOME/.config/aadd/xinitrc.local"
+
+# polkit agent, so fprintd-enroll, pkexec etc. can ask for a password; path differs per distro
+for agent in /usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1 \
+             /usr/libexec/polkit-gnome-authentication-agent-1 \
+             /usr/libexec/polkit-mate-authentication-agent-1 \
+             /usr/lib/policykit-1-gnome/polkit-gnome-authentication-agent-1; do
+	[ -x "$agent" ] && { "$agent" & break; }
+done
+
+# set the panel mode (e.g. 120Hz) and DPI once; `monitor-hotplug watch &` would also follow plugging
+[ "@AADD_HOTPLUG@" = 1 ] && monitor-hotplug
+xss-lock -- lock &
+dunst &
+# SNI -> XEmbed bridge: Qt/Electron apps only publish D-Bus tray icons,
+# dwm's systray only speaks XEmbed
+command -v snixembed >/dev/null && snixembed &
+netnotify &
+slstatus &
+[ "@AADD_PICOM@" = 1 ] && picom &
+
+# Wallpaper: a random one from the folder every 15 min (folder set in aadd.conf)
+if ls "@AADD_WALLPAPER_DIR@"/* >/dev/null 2>&1; then
+	while feh --bg-fill --randomize --no-fehbg "@AADD_WALLPAPER_DIR@"/*; do sleep 900; done &
+else
+	xsetroot -solid '#1d1f21'
+fi
+
+exec dwm

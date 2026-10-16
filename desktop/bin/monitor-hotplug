@@ -1,0 +1,70 @@
+#!/bin/sh
+# External monitor plugged in -> external only, and switch the X server's DPI to
+# suit it. The 2880x1800 panel wants ~154; a 24" 1080p wants ~102, so without
+# this every UI on the external screen renders ~1.5x too big.
+#
+# xrandr --scale would fix it instantly for running apps, but the xe driver
+# scans out garbage under a RandR transform on this machine, so: DPI it is.
+# Cost: only apps started after the switch pick up the new size. dwm restarts
+# itself (SIGHUP) and kitty reloads (SIGUSR1); Firefox needs a restart.
+# internal panel: first eDP/LVDS/DSI output, whatever the driver calls it
+INTERNAL=$(xrandr --query | awk '/^(eDP|LVDS|DSI)/{print $1; exit}')
+INTERNAL=${INTERNAL:-eDP-1}
+INTMODE="@AADD_INTERNAL_MODE@"   # --auto picks the preferred mode, often 60Hz on high-refresh panels
+EXTMODE="@AADD_EXTERNAL_MODE@"
+DPI_INTERNAL=@AADD_DPI@                 # taste, not physics: from the aadd display scale
+CONF=${XDG_CONFIG_HOME:-$HOME/.config}/screen-scale   # "OUTPUT PERCENT" per line, from screenmenu
+
+# Per-output DPI: the saved scale % of 96 if screenmenu set one, else the taste
+# value for the internal panel, else the monitor's real DPI from its mm size.
+dpi_of() {
+	pct=$([ -f "$CONF" ] && awk -v o="$1" '$1==o{print $2}' "$CONF")
+	[ -n "$pct" ] && { echo $((pct * 96 / 100)); return; }
+	[ "$1" = "$INTERNAL" ] && { echo $DPI_INTERNAL; return; }
+	line=$(xrandr --query | grep "^$1 connected")
+	px=$(echo "$line" | grep -oP '\d+(?=x\d+\+)' | head -1)
+	mm=$(echo "$line" | grep -oP '\d+(?=mm x)')
+	awk -v p="$px" -v m="$mm" 'BEGIN{print (p&&m) ? int(p*25.4/m + 0.5) : 96}'
+}
+
+setdpi() {
+	[ "$1" = "$(xrdb -query | awk -F'[:\t ]+' '/^Xft.dpi/{print $2}')" ] && return
+	printf 'Xft.dpi: %s\nXcursor.size: %s\n' "$1" "$(($1 * 24 / 96))" | xrdb -merge
+	# Only HUP a dwm that actually has the handler - an older build would just
+	# die, taking the X session with it.
+	pid=$(pgrep -x dwm) && cmp -s "/proc/$pid/exe" "$(command -v dwm)" && kill -HUP "$pid"
+	pkill -USR1 -x kitty         # config reload -> recomputes font px from DPI
+}
+
+apply() {
+	ext=$(xrandr --query | awk '/ connected/ && $1 != "'"$INTERNAL"'" {print $1; exit}')
+	off=$(xrandr --query | awk '/ (dis)?connected/ {print $1}' | grep -vx "$INTERNAL" | grep -vx "$ext")
+
+	if [ -z "$ext" ]; then
+		set -- --output "$INTERNAL" $INTMODE --primary
+		out=$INTERNAL
+	else
+		# turn it on first: xrandr reports physical size only for an active output
+		mode=$EXTMODE
+		xrandr --output "$ext" $mode --primary 2>/dev/null ||
+			{ mode=--auto; xrandr --output "$ext" --auto --primary; }
+		set -- --output "$ext" $mode --primary --pos 0x0 --output "$INTERNAL" --off
+		out=$ext
+	fi
+	for o in $off; do set -- "$@" --output "$o" --off; done
+	xrandr "$@" && setdpi "$(dpi_of "$out")"
+}
+
+case "$1" in
+	dpi) setdpi "$(dpi_of "$2")"; exit ;;   # screenmenu changed the layout or the scale
+	watch) ;;
+	*) apply; exit ;;
+esac
+
+# ponytail: 2s sysfs poll instead of a udev rule - no root, no XAUTHORITY dance
+while :; do
+	now=$(cat /sys/class/drm/card*/status)
+	[ "$now" = "$was" ] || { sleep 1; apply; }
+	was=$now
+	sleep 2
+done

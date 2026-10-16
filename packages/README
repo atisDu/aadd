@@ -1,0 +1,6 @@
+One package per line:   arch | debian | fedora | description
+  "-"  = not packaged on that distro, skipped with a note
+  arch = repo name; if pacman doesn't know it, it's built from the AUR
+Lines starting with # are comments. Add a category by adding a <name>.list;
+the first line "## <title>" is what the menu shows, "## off" on the second
+line makes the category unselected by default.

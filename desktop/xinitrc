@@ -40,6 +40,7 @@ command -v snixembed >/dev/null && snixembed &
 # wakelock fallback can crash it (BadGC). Also pauses xss-lock during video.
 ssinhibit &
 netnotify &
+battnotify &
 slstatus &
 [ "@AADD_PICOM@" = 1 ] && picom &
 

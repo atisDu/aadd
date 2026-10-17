@@ -1,0 +1,16 @@
+#!/bin/bash
+# Critical dunst warning once when the battery drops below 10% while discharging.
+# Re-arms after charging or going back above. Started from ~/.xinitrc.
+
+bat=$(ls -d /sys/class/power_supply/BAT* 2>/dev/null | head -1)
+[[ $bat ]] || exit 0
+warned=0
+while sleep 60; do
+	cap=$(<"$bat/capacity") status=$(<"$bat/status")
+	if [[ $status == Discharging && $cap -lt 10 ]]; then
+		((warned)) || notify-send -a battery -u critical "Battery low" "$cap% left, plug in"
+		warned=1
+	else
+		warned=0
+	fi
+done

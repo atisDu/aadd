@@ -3,6 +3,9 @@
 # put machine-only tweaks (xinput, xrandr) in ~/.config/aadd/xinitrc.local,
 # which aadd never overwrites.
 export PATH="$HOME/.local/bin:$PATH"
+# Keep session stderr across logins (display managers truncate their own log)
+mkdir -p "$HOME/.local/state" && exec >>"$HOME/.local/state/xsession.log" 2>&1
+echo "=== session start $(date -Is) ==="
 export XCURSOR_THEME=breeze_cursors
 # XCURSOR_SIZE unset on purpose: it would override Xcursor.size, which
 # monitor-hotplug switches along with the DPI.
@@ -33,6 +36,9 @@ dunst &
 # SNI -> XEmbed bridge: Qt/Electron apps only publish D-Bus tray icons,
 # dwm's systray only speaks XEmbed
 command -v snixembed >/dev/null && snixembed &
+# Owner for org.freedesktop.ScreenSaver: without one, Firefox's X11 video
+# wakelock fallback can crash it (BadGC). Also pauses xss-lock during video.
+ssinhibit &
 netnotify &
 slstatus &
 [ "@AADD_PICOM@" = 1 ] && picom &

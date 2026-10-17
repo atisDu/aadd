@@ -25,6 +25,7 @@ xdotool | xdotool | xdotool | typing/automation
 snixembed | - | - | tray icon bridge
 python-gobject | python3-gi | python3-gobject | ssinhibit (D-Bus)
 libxss | libxss1 | libXScrnSaver | ssinhibit (X screensaver suspend)
+power-profiles-daemon | power-profiles-daemon | power-profiles-daemon | battnotify power-saver switching
 polkit-gnome | policykit-1-gnome | mate-polkit | polkit password prompts
 alsa-utils | alsa-utils | alsa-utils | amixer (status bar volume)
 pipewire | pipewire | pipewire | audio

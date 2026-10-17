@@ -77,23 +77,26 @@ static const char mic[]         = "[ `amixer sget Capture | tail -n 1 | awk '{pr
 
 static const char light[]       = "printf '%d' \"$(( $(brightnessctl g 2>/dev/null) * 100 / $(brightnessctl m 2>/dev/null) ))\" 2>/dev/null";
 
-/* power profile plus the active refresh rate, e.g. "power-saver:120hz" */
-static const char powerprofile[] = "printf '%s:%shz' \"$(powerprofilesctl get 2>/dev/null)\" \
-                                    \"$(xrandr --current 2>/dev/null | awk '/[0-9]\\*/{for(i=2;i<=NF;i++) if($i ~ /\\*/){print int($i+0.5); exit}}')\"";
+/* power profile shortened to bal/pow/sav */
+static const char powerprofile[] = "case \"$(powerprofilesctl get 2>/dev/null)\" in \
+                                    balanced) printf bal;; performance) printf pow;; power-saver) printf sav;; esac";
 
-static const char battery[]     = "cat /sys/class/power_supply/BAT*/capacity 2>/dev/null | head -n1";
+/* capacity, plus a bolt while charging, e.g. "11%⚡" */
+static const char battery[]     = "b=$(ls -d /sys/class/power_supply/BAT* 2>/dev/null | head -n1); \
+                                   printf '%s%%' \"$(cat $b/capacity)\"; \
+                                   [ \"$(cat $b/status)\" = Charging ] && printf '⚡'";
 
 static const struct arg args[] = {
 	/* function format          argument */
   { ram_perc,     "ram %s%%  ",   NULL         },
 #if AADD_LAPTOP
-  { run_command,  "jauda=%s  ",   powerprofile },
+  { run_command,  "jauda: %s  ",  powerprofile },
   { run_command,  "spilgt %s%%  ",light        },
 #endif
   { run_command,  "skaļ %s",      vol          },
   { run_command,  "/%s  ",        mic          },
 #if AADD_LAPTOP
-  { run_command,  "bat %s%%  ", battery      },
+  { run_command,  "bat %s  ",     battery      },
 #endif
   { datetime,     "%s ",          "%H:%M:%S"   },
 };
